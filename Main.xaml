@@ -1,0 +1,10 @@
+<Window x:Class="LoginApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:LoginApp"
+        Title="Авторизація" Height="250" Width="300">
+    <Grid>
+        <local:LoginControl HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+    </Grid>
+</Window>
