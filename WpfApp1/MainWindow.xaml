@@ -1,0 +1,23 @@
+﻿<Window x:Class="TRIGONFUNC.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:TRIGONFUNC"
+        Title="Тригонометричні функції"
+        Height="350"
+        SizeToContent="Width"
+        ResizeMode="CanMinimize"
+        WindowStartupLocation="CenterScreen"
+        Loaded="Window_Loaded"
+        LayoutUpdated="Window_LayoutUpdated">
+    <ListView x:Name="listView1">
+        <ListView.View>
+            <GridView x:Name="gridView1">
+                <GridViewColumn Header="x" DisplayMemberBinding="{Binding Path=X, StringFormat='{}{0:f5}'}" />
+                <GridViewColumn Header="Sin(x*pi)" DisplayMemberBinding="{Binding Path=SinX}"/>
+                <GridViewColumn Header="Cos(x*pi)" DisplayMemberBinding="{Binding Path=CosX}"/>
+                <GridViewColumn Header="Tg(x*pi)" DisplayMemberBinding="{Binding Path=TgX}"/>
+                <GridViewColumn Header="Ctg(x*pi)" DisplayMemberBinding="{Binding Path=CtgX}"/>
+            </GridView>
+        </ListView.View>
+    </ListView>
+</Window>
