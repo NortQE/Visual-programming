@@ -1,0 +1,175 @@
+// MainWindow.xaml.cs
+using System;
+using System.Collections.Generic;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Media3D;
+using System.Windows.Threading;
+
+namespace WpfApp2  // Изменено на WpfApp2 для соответствия XAML
+{
+    public partial class MainWindow : Window
+    {
+        private readonly List<Snowflake> _snowflakes = new List<Snowflake>();
+        private readonly Random _random = new Random();
+        private readonly DispatcherTimer _animationTimer = new DispatcherTimer();
+        private const int FlakesToAdd = 50;
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            InitializeAnimationTimer();
+            AddSnowflakes(FlakesToAdd);
+        }
+
+        private void InitializeAnimationTimer()
+        {
+            _animationTimer.Interval = TimeSpan.FromMilliseconds(16);
+            _animationTimer.Tick += (s, e) => AnimateSnowflakes();
+            _animationTimer.Start();
+        }
+
+        private void AddSnowflakes_Click(object sender, RoutedEventArgs e) => AddSnowflakes(FlakesToAdd);
+        private void ClearAll_Click(object sender, RoutedEventArgs e) => ClearAllSnowflakes();
+
+        private void AddSnowflakes(int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                var snowflake = new Snowflake(Viewport, _random);
+                _snowflakes.Add(snowflake);
+            }
+        }
+
+        private void ClearAllSnowflakes()
+        {
+            foreach (var snowflake in _snowflakes)
+            {
+                snowflake.RemoveFromViewport();
+            }
+            _snowflakes.Clear();
+        }
+
+        private void AnimateSnowflakes()
+        {
+            double speedFactor = SnowfallSpeedSlider.Value;
+
+            foreach (var snowflake in _snowflakes)
+            {
+                snowflake.Position = new Point3D(
+                    snowflake.Position.X + (_random.NextDouble() - 0.5) * 0.01 * speedFactor,
+                    snowflake.Position.Y - 0.1 * speedFactor,
+                    snowflake.Position.Z + (_random.NextDouble() - 0.5) * 0.01 * speedFactor);
+
+                snowflake.RotationX += 2 * speedFactor;
+                snowflake.RotationY += 1.5 * speedFactor;
+                snowflake.RotationZ += 2.5 * speedFactor;
+
+                if (snowflake.Position.Y < -15)
+                {
+                    snowflake.Position = new Point3D(
+                        (_random.NextDouble() - 0.5) * 15,
+                        15 + _random.NextDouble() * 10,
+                        (_random.NextDouble() - 0.5) * 10);
+                }
+            }
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _animationTimer.Stop();
+            base.OnClosed(e);
+        }
+    }
+
+    public class Snowflake
+    {
+        private readonly ModelVisual3D _visual;
+        private readonly TranslateTransform3D _translation = new TranslateTransform3D();
+        private readonly RotateTransform3D _rotationX = new RotateTransform3D(new AxisAngleRotation3D(new Vector3D(1, 0, 0), 0));
+        private readonly RotateTransform3D _rotationY = new RotateTransform3D(new AxisAngleRotation3D(new Vector3D(0, 1, 0), 0));
+        private readonly RotateTransform3D _rotationZ = new RotateTransform3D(new AxisAngleRotation3D(new Vector3D(0, 0, 1), 0));
+
+        public Point3D Position
+        {
+            get => new Point3D(_translation.OffsetX, _translation.OffsetY, _translation.OffsetZ);
+            set
+            {
+                _translation.OffsetX = value.X;
+                _translation.OffsetY = value.Y;
+                _translation.OffsetZ = value.Z;
+            }
+        }
+
+        public double RotationX
+        {
+            get => ((AxisAngleRotation3D)_rotationX.Rotation).Angle;
+            set => ((AxisAngleRotation3D)_rotationX.Rotation).Angle = value;
+        }
+
+        public double RotationY
+        {
+            get => ((AxisAngleRotation3D)_rotationY.Rotation).Angle;
+            set => ((AxisAngleRotation3D)_rotationY.Rotation).Angle = value;
+        }
+
+        public double RotationZ
+        {
+            get => ((AxisAngleRotation3D)_rotationZ.Rotation).Angle;
+            set => ((AxisAngleRotation3D)_rotationZ.Rotation).Angle = value;
+        }
+
+        public Snowflake(Viewport3D viewport, Random random)
+        {
+            var mesh = new MeshGeometry3D();
+            CreateSnowflakeGeometry(mesh);
+
+            var material = new DiffuseMaterial(Brushes.White);
+            var model = new GeometryModel3D(mesh, material)
+            {
+                Transform = new Transform3DGroup
+                {
+                    Children = { _rotationX, _rotationY, _rotationZ, _translation }
+                }
+            };
+
+            _visual = new ModelVisual3D { Content = model };
+            viewport.Children.Add(_visual);
+
+            Position = new Point3D(
+                (random.NextDouble() - 0.5) * 15,
+                20 + random.NextDouble() * 10,
+                (random.NextDouble() - 0.5) * 10);
+        }
+
+        private void CreateSnowflakeGeometry(MeshGeometry3D mesh)
+        {
+            double size = 0.3;
+            mesh.Positions.Add(new Point3D(0, 0, 0));
+
+            for (int i = 0; i < 6; i++)
+            {
+                double angle = Math.PI * i / 3;
+                double x = size * Math.Cos(angle);
+                double z = size * Math.Sin(angle);
+
+                mesh.Positions.Add(new Point3D(x, 0, z));
+                mesh.Positions.Add(new Point3D(x / 2, 0, z / 2));  // Добавлено для более сложной формы снежинки
+
+                mesh.TriangleIndices.Add(0);
+                mesh.TriangleIndices.Add(3 * i + 1);
+                mesh.TriangleIndices.Add(3 * i + 2);
+            }
+        }
+
+        public void RemoveFromViewport()
+        {
+            var parent = VisualTreeHelper.GetParent(_visual);
+            if (parent is Viewport3D viewport)
+            {
+                viewport.Children.Remove(_visual);
+            }
+        }
+    }
+}
